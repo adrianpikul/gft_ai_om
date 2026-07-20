@@ -228,6 +228,42 @@ function Get-RepositoryContext {
     }
 }
 
+function Get-GitHubApiErrorMessage {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Exception
+    )
+
+    $message = $Exception.Message
+    $responseProperty = $Exception.PSObject.Properties['Response']
+    if ($null -eq $responseProperty -or $null -eq $responseProperty.Value) {
+        return $message
+    }
+
+    try {
+        $stream = $responseProperty.Value.GetResponseStream()
+        if ($null -eq $stream) {
+            return $message
+        }
+
+        $reader = [System.IO.StreamReader]::new($stream)
+        try {
+            $responseBody = $reader.ReadToEnd()
+        }
+        finally {
+            $reader.Dispose()
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($responseBody)) {
+            return "$message Response: $responseBody"
+        }
+    }
+    catch {
+    }
+
+    return $message
+}
+
 function Invoke-GitHubApi {
     param(
         [Parameter(Mandatory = $true)]
@@ -263,34 +299,21 @@ function Invoke-GitHubApi {
     }
 
     try {
-        $responseHeaders = $null
-        $invokeParams['ResponseHeadersVariable'] = 'responseHeaders'
-        $result = Invoke-RestMethod @invokeParams
+        # Invoke-WebRequest works on both Windows PowerShell 5.1 and PowerShell 7.
+        # -UseBasicParsing avoids the Internet Explorer dependency in PowerShell 5.1.
+        $response = Invoke-WebRequest @invokeParams -UseBasicParsing
         if ($null -ne $ResponseHeadersRef) {
-            $ResponseHeadersRef.Value = $responseHeaders
-        }
-        return $result
-    }
-    catch {
-        $message = $_.Exception.Message
-        $response = $_.Exception.Response
-        if ($null -ne $response) {
-            try {
-                $stream = $response.GetResponseStream()
-                if ($null -ne $stream) {
-                    $reader = [System.IO.StreamReader]::new($stream)
-                    $responseBody = $reader.ReadToEnd()
-                    $reader.Dispose()
-                    if (-not [string]::IsNullOrWhiteSpace($responseBody)) {
-                        $message = "$message Response: $responseBody"
-                    }
-                }
-            }
-            catch {
-            }
+            $ResponseHeadersRef.Value = $response.Headers
         }
 
-        Fail "GitHub API request failed: $message"
+        if ([string]::IsNullOrWhiteSpace($response.Content)) {
+            return $null
+        }
+
+        return ($response.Content | ConvertFrom-Json)
+    }
+    catch {
+        Fail "GitHub API request failed: $(Get-GitHubApiErrorMessage -Exception $_.Exception)"
     }
 }
 
@@ -339,28 +362,10 @@ function Invoke-GitHubRawGet {
     }
 
     try {
-        return (Invoke-WebRequest -Method GET -Uri $uri -Headers $headers).Content
+        return (Invoke-WebRequest -Method GET -Uri $uri -Headers $headers -UseBasicParsing).Content
     }
     catch {
-        $message = $_.Exception.Message
-        $response = $_.Exception.Response
-        if ($null -ne $response) {
-            try {
-                $stream = $response.GetResponseStream()
-                if ($null -ne $stream) {
-                    $reader = [System.IO.StreamReader]::new($stream)
-                    $responseBody = $reader.ReadToEnd()
-                    $reader.Dispose()
-                    if (-not [string]::IsNullOrWhiteSpace($responseBody)) {
-                        $message = "$message Response: $responseBody"
-                    }
-                }
-            }
-            catch {
-            }
-        }
-
-        Fail "GitHub API request failed: $message"
+        Fail "GitHub API request failed: $(Get-GitHubApiErrorMessage -Exception $_.Exception)"
     }
 }
 
