@@ -622,8 +622,11 @@ function Add-PrLineComment {
 
     $target = Resolve-ReviewCommentTarget -PrNumber $PrNumber -FilePath $FilePath -Line $Line
     $prefix = Get-PullRequestPathPrefix
+    $pr = Invoke-GitHubApi -Method GET -Path "$prefix/pulls/$PrNumber"
+    $headSha = $pr.head.sha
     $comment = Invoke-GitHubApi -Method POST -Path "$prefix/pulls/$PrNumber/comments" -BodyObject @{
         body = $Body
+        commit_id = $headSha
         path = $target.path
         line = $target.line
         side = $target.side
