@@ -29,7 +29,78 @@ function Write-Json {
         $Value
     )
 
-    $Value | ConvertTo-Json -Depth 20
+    $Value | ConvertTo-Json -Depth 20 -Compress
+}
+
+function Select-PrSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        $PullRequest
+    )
+
+    return @{
+        number = $PullRequest.number
+        title = $PullRequest.title
+        url = $PullRequest.html_url
+        state = $PullRequest.state
+        isDraft = [bool]$PullRequest.draft
+        createdAt = $PullRequest.created_at
+        updatedAt = $PullRequest.updated_at
+        author = if ($null -ne $PullRequest.user) { $PullRequest.user.login } else { $null }
+        head = if ($null -ne $PullRequest.head) { $PullRequest.head.ref } else { $null }
+        base = if ($null -ne $PullRequest.base) { $PullRequest.base.ref } else { $null }
+    }
+}
+
+function Select-PrFileSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        $File
+    )
+
+    return @{
+        path = $File.filename
+        status = $File.status
+        additions = $File.additions
+        deletions = $File.deletions
+        changes = $File.changes
+    }
+}
+
+function Select-IssueCommentSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Comment
+    )
+
+    return @{
+        id = $Comment.id
+        url = $Comment.html_url
+        author = if ($null -ne $Comment.user) { $Comment.user.login } else { $null }
+        createdAt = $Comment.created_at
+        updatedAt = $Comment.updated_at
+        body = $Comment.body
+    }
+}
+
+function Select-ReviewCommentSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Comment
+    )
+
+    return @{
+        id = $Comment.id
+        url = $Comment.html_url
+        author = if ($null -ne $Comment.user) { $Comment.user.login } else { $null }
+        createdAt = $Comment.created_at
+        updatedAt = $Comment.updated_at
+        path = $Comment.path
+        line = $Comment.line
+        side = $Comment.side
+        commitId = $Comment.commit_id
+        body = $Comment.body
+    }
 }
 
 function Get-RequiredPat {
@@ -361,7 +432,7 @@ function List-OpenPrs {
         owner = $context.owner
         repo = $context.repo
         count = $prs.Count
-        pullRequests = $prs
+        pullRequests = @($prs | ForEach-Object { Select-PrSummary -PullRequest $_ })
     }
 }
 
@@ -381,9 +452,12 @@ function Get-PrDetails {
         host = $context.host
         owner = $context.owner
         repo = $context.repo
-        pullRequest = $pr
-        files = $files
-        comments = $comments
+        pullRequest = Select-PrSummary -PullRequest $pr
+        files = @($files | ForEach-Object { Select-PrFileSummary -File $_ })
+        comments = @{
+            issueComments = @($comments.issueComments | ForEach-Object { Select-IssueCommentSummary -Comment $_ })
+            reviewComments = @($comments.reviewComments | ForEach-Object { Select-ReviewCommentSummary -Comment $_ })
+        }
     }
 }
 
