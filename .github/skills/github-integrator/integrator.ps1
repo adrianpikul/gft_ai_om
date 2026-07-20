@@ -362,7 +362,12 @@ function Invoke-GitHubRawGet {
     }
 
     try {
-        return (Invoke-WebRequest -Method GET -Uri $uri -Headers $headers -UseBasicParsing).Content
+        $content = (Invoke-WebRequest -Method GET -Uri $uri -Headers $headers -UseBasicParsing).Content
+        if ($content -is [byte[]]) {
+            return [System.Text.Encoding]::UTF8.GetString($content)
+        }
+
+        return [string]$content
     }
     catch {
         Fail "GitHub API request failed: $(Get-GitHubApiErrorMessage -Exception $_.Exception)"
