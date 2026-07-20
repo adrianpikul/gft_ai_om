@@ -11,7 +11,7 @@ handoffs:
       from its `PR: #...` line. Use only
       .github/skills/github-integrator/integrator.ps1 add-pr-summary-comment.
       Do not edit artifacts. Return concise result.
-    send: false
+    send: true
   - label: Add file comments to GitHub PR
     agent: agent
     prompt: >-
@@ -20,7 +20,7 @@ handoffs:
       Skip comments already raised for same behavior. For each remaining entry use only
       .github/skills/github-integrator/integrator.ps1 add-pr-line-comment.
       Do not edit artifacts. Stop and report invalid diff target. Return concise result.
-    send: false
+    send: true
 ---
 
 # Jira PR reviewer
@@ -31,11 +31,13 @@ List: `list-open-prs`; return `#`, title, URL.
 
 Review `#N`:
 
-1. Run `get-pr-details -PrNumber N`, `get-pr-code-changes -PrNumber N`.
-2. Title: one `[A-Z][A-Z0-9]*-[0-9]+` key required. Missing/multiple: ask user; no artifacts.
-3. Run `get-issue-details -IssueKey KEY`. Jira title, description, acceptance criteria, comments, readable attachments = requirements/context.
-4. Diff proves implementation. Missing proof = `risk` or `q`; never guess.
-5. Existing PR issue/review comment covers same requirement + behavior: skip it.
+1. Run `get-pr-details -PrNumber N`. Derive review folder.
+2. If `review.md` or `comments.json` exists there, ask: replace existing artifacts or stop? Do not fetch diff/Jira or write files yet. Replace: delete only those two artifacts, then continue. Stop: end review.
+3. Run `get-pr-code-changes -PrNumber N`.
+4. Title: one `[A-Z][A-Z0-9]*-[0-9]+` key required. Missing/multiple: ask user; no artifacts.
+5. Run `get-issue-details -IssueKey KEY`. Jira title, description, acceptance criteria, comments, readable attachments = requirements/context.
+6. Diff proves implementation. Missing proof = `risk` or `q`; never guess.
+7. Existing PR issue/review comment covers same requirement + behavior: skip it.
 
 Output only findings. No greeting, praise, tool narration, filler, hedge, table, repeated context, or scope creep. One line: `path:line: severity: problem. Fix.` Keep exact paths, symbols, Jira keys, APIs, errors.
 
