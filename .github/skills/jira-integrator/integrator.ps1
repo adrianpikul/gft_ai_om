@@ -176,7 +176,7 @@ function Get-IssueDetails {
     $requestedFields = @('summary', 'description', 'attachment')
     if ($null -ne $criteriaField) { $requestedFields += [string]$criteriaField.id }
     $fieldQuery = [System.Uri]::EscapeDataString(($requestedFields -join ','))
-    $issue = Invoke-JiraApi -Path "/rest/api/2/issue/$escapedIssueKey?fields=$fieldQuery"
+    $issue = Invoke-JiraApi -Path "/rest/api/2/issue/${escapedIssueKey}?fields=$fieldQuery"
     $comments = Get-IssueComments -EscapedIssueKey $escapedIssueKey
     $criteria = $null
     if ($null -ne $criteriaField) { $criteria = $issue.fields.($criteriaField.id) }
