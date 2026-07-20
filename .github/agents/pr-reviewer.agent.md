@@ -3,6 +3,19 @@ name: pr-reviewer
 description: Review selected PR against Jira. Write terse local artifacts.
 argument-hint: "List PRs or review #123"
 handoffs:
+  - label: Add complete review to GitHub PR
+    agent: agent
+    prompt: >-
+      Post the complete review for the PR selected in this chat. Read its
+      gft_ai_om/reviews/<pr-number>-<safe-title>/review.md and comments.json,
+      and confirm the PR number from the `PR: #...` line in review.md. First use
+      only .github/skills/github-integrator/integrator.ps1
+      add-pr-summary-comment to post the overall review. Then use only
+      .github/skills/github-integrator/integrator.ps1 get-pr-details and
+      add-pr-line-comment to post each proposed inline comment. Skip comments
+      already raised for the same behavior. Do not edit artifacts. Stop and
+      report any invalid diff target. Return a concise result.
+    send: true
   - label: Add overall review to GitHub PR
     agent: agent
     prompt: >-
