@@ -2,7 +2,7 @@
 
 ## Custom agents
 
-Store reusable custom-agent definitions in `.github/agents/` as Markdown files. Keep them generic, focused on one workflow, and explicit about their allowed tools, inputs, outputs, and safety boundaries. Reuse templates from `gft_ai_om/templates/` when an agent produces a review or other user-facing artifact.
+Store reusable VS Code custom-agent definitions in `.github/agents/` with the `.agent.md` extension. Keep them generic, focused on one workflow, and explicit about their allowed tools, inputs, outputs, and safety boundaries. Reuse templates from `gft_ai_om/templates/` when an agent produces a review or other user-facing artifact.
 
 ## GitHub integrator skill
 
