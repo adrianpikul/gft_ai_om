@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh SessionStart",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName SessionStart",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh UserPromptSubmit",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName UserPromptSubmit",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh PreToolUse",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName PreToolUse",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh PostToolUse",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName PostToolUse",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh PreCompact",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName PreCompact",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "SubagentStart": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh SubagentStart",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName SubagentStart",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "SubagentStop": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh SubagentStop",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName SubagentStop",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh Stop",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName Stop",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "ErrorOccurred": [
+      {
+        "type": "command",
+        "command": "bash gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh ErrorOccurred",
+        "windows": "powershell -File gft_ai_om\\copilot_usage\\scripts\\collect-copilot-usage.ps1 -EventName ErrorOccurred",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}
