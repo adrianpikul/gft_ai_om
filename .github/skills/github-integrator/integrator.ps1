@@ -6,7 +6,11 @@ param(
     [int]$PrNumber,
     [string]$FilePath,
     [int]$Line,
-    [string]$Body
+    [string]$Body,
+    [ValidateSet('open', 'closed', 'all')]
+    [string]$State = 'open',
+    [int]$Page = 1,
+    [int]$PerPage = 100
 )
 
 Set-StrictMode -Version Latest
@@ -49,6 +53,19 @@ function Select-PrSummary {
         author = if ($null -ne $PullRequest.user) { $PullRequest.user.login } else { $null }
         head = if ($null -ne $PullRequest.head) { $PullRequest.head.ref } else { $null }
         base = if ($null -ne $PullRequest.base) { $PullRequest.base.ref } else { $null }
+    }
+}
+
+function Select-PrListItem {
+    param(
+        [Parameter(Mandatory = $true)]
+        $PullRequest
+    )
+
+    return @{
+        number = $PullRequest.number
+        title = $PullRequest.title
+        url = $PullRequest.html_url
     }
 }
 
@@ -220,7 +237,8 @@ function Invoke-GitHubApi {
         [Parameter(Mandatory = $true)]
         [string]$Path,
 
-        $BodyObject
+        $BodyObject,
+        [ref]$ResponseHeadersRef
     )
 
     $pat = Get-RequiredPat
@@ -245,7 +263,13 @@ function Invoke-GitHubApi {
     }
 
     try {
-        return Invoke-RestMethod @invokeParams
+        $responseHeaders = $null
+        $invokeParams['ResponseHeadersVariable'] = 'responseHeaders'
+        $result = Invoke-RestMethod @invokeParams
+        if ($null -ne $ResponseHeadersRef) {
+            $ResponseHeadersRef.Value = $responseHeaders
+        }
+        return $result
     }
     catch {
         $message = $_.Exception.Message
@@ -423,8 +447,27 @@ function Detect-Repo {
 }
 
 function List-OpenPrs {
+    if ($Page -le 0) {
+        Fail 'list-open-prs requires -Page with a positive integer.'
+    }
+
+    if ($PerPage -le 0) {
+        Fail 'list-open-prs requires -PerPage with a positive integer.'
+    }
+
+    if ($PerPage -gt 100) {
+        $PerPage = 100
+    }
+
     $prefix = Get-PullRequestPathPrefix
-    $prs = @(Invoke-GitHubApiPagedGet -Path "$prefix/pulls?state=open")
+    $responseHeaders = $null
+    $prs = @(
+        Invoke-GitHubApi -Method GET -Path "$prefix/pulls?state=$State&sort=updated&direction=desc&per_page=$PerPage&page=$Page" -ResponseHeadersRef ([ref]$responseHeaders)
+    )
+    $linkHeader = $null
+    if ($null -ne $responseHeaders) {
+        $linkHeader = $responseHeaders['Link']
+    }
 
     $context = Get-RepositoryContext
     return @{
@@ -432,7 +475,8 @@ function List-OpenPrs {
         owner = $context.owner
         repo = $context.repo
         count = $prs.Count
-        pullRequests = @($prs | ForEach-Object { Select-PrSummary -PullRequest $_ })
+        hasMore = -not [string]::IsNullOrWhiteSpace($linkHeader) -and $linkHeader.Contains('rel="next"')
+        pullRequests = @($prs | ForEach-Object { Select-PrListItem -PullRequest $_ })
     }
 }
 

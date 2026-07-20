@@ -3,12 +3,22 @@ github-integrator
 Purpose:
 This skill provides a PowerShell-based GitHub pull request integration for GitHub Copilot / VS Code agent skills without relying on GitHub MCP.
 
+Invocation:
+- Use the current PowerShell host when available; if a PowerShell executable must be launched on Windows, use `powershell.exe`
+- Do not require `pwsh`
+- Do not fall back to GitHub MCP or `gh`
+
 Supported commands:
 - detect-repo
 - list-open-prs
 - get-pr-details
 - add-pr-summary-comment
 - add-pr-line-comment
+
+`list-open-prs` options:
+- `-State open|closed|all`
+- `-Page <positive integer>`
+- `-PerPage <positive integer, max 100>`
 
 Required environment variable:
 - gft_ai_om_github_pat
