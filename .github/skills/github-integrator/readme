@@ -1,0 +1,25 @@
+github-integrator
+
+Purpose:
+This skill provides a PowerShell-based GitHub pull request integration for GitHub Copilot / VS Code agent skills without relying on GitHub MCP.
+
+Supported commands:
+- detect-repo
+- list-open-prs
+- get-pr-details
+- add-pr-summary-comment
+- add-pr-line-comment
+
+Required environment variable:
+- gft_ai_om_github_pat
+
+Remote support:
+- HTTPS remotes such as https://github.com/owner/repo.git
+- SSH remotes such as git@github.com:owner/repo.git
+- GitHub Enterprise hosts using the detected host and /api/v3 base URL
+
+Forbidden operations:
+- Merging, closing, reopening, deleting, or editing pull requests
+- Editing or deleting comments
+- Issue, label, reviewer, assignee, milestone, or release management
+- Any write action other than PR summary comments and inline PR diff comments
