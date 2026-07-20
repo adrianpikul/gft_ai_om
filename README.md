@@ -14,6 +14,6 @@ Example for the current PowerShell session:
 
 ```powershell
 $env:gft_ai_om_github_pat = '...'
-$env:gft_ai_om_jira_url = 'https://jira.example.com'
+$env:gft_ai_om_jira_url = 'https://jira.example.com/jira'
 $env:gft_ai_om_jira_pat = '...'
 ```

@@ -1,5 +1,9 @@
 # Repository instructions
 
+## Custom agents
+
+Store reusable custom-agent definitions in `.github/agents/` as Markdown files. Keep them generic, focused on one workflow, and explicit about their allowed tools, inputs, outputs, and safety boundaries. Reuse templates from `gft_ai_om/templates/` when an agent produces a review or other user-facing artifact.
+
 ## GitHub integrator skill
 
 For GitHub pull-request work, use and maintain `.github/skills/github-integrator/integrator.ps1` as the only integration path. Implement every supported workflow in that script; do not require ad-hoc commands, external GitHub tools, or manual steps outside it.
