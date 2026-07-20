@@ -12,6 +12,7 @@ Supported commands:
 - detect-repo
 - list-open-prs
 - get-pr-details
+- get-pr-code-changes
 - add-pr-summary-comment
 - add-pr-line-comment
 
@@ -19,6 +20,8 @@ Supported commands:
 - `-State open|closed|all`
 - `-Page <positive integer>`
 - `-PerPage <positive integer, max 100>`
+
+`get-pr-code-changes` requires `-PrNumber` and returns the complete unified diff in a JSON `diff` field for use as PR-review context.
 
 Required environment variable:
 - gft_ai_om_github_pat

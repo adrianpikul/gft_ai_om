@@ -319,6 +319,51 @@ function Invoke-GitHubApiPagedGet {
     return $allItems
 }
 
+function Invoke-GitHubRawGet {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Accept
+    )
+
+    $pat = Get-RequiredPat
+    $repoContext = Get-RepositoryContext
+    $uri = "$($repoContext.apiBaseUrl)$Path"
+    $headers = @{
+        Authorization = "Bearer $pat"
+        Accept = $Accept
+        'User-Agent' = 'github-integrator-skill'
+        'X-GitHub-Api-Version' = '2022-11-28'
+    }
+
+    try {
+        return (Invoke-WebRequest -Method GET -Uri $uri -Headers $headers).Content
+    }
+    catch {
+        $message = $_.Exception.Message
+        $response = $_.Exception.Response
+        if ($null -ne $response) {
+            try {
+                $stream = $response.GetResponseStream()
+                if ($null -ne $stream) {
+                    $reader = [System.IO.StreamReader]::new($stream)
+                    $responseBody = $reader.ReadToEnd()
+                    $reader.Dispose()
+                    if (-not [string]::IsNullOrWhiteSpace($responseBody)) {
+                        $message = "$message Response: $responseBody"
+                    }
+                }
+            }
+            catch {
+            }
+        }
+
+        Fail "GitHub API request failed: $message"
+    }
+}
+
 function Get-PullRequestPathPrefix {
     $repoContext = Get-RepositoryContext
     return "/repos/$($repoContext.owner)/$($repoContext.repo)"
@@ -505,6 +550,26 @@ function Get-PrDetails {
     }
 }
 
+function Get-PrCodeChanges {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$PrNumber
+    )
+
+    $prefix = Get-PullRequestPathPrefix
+    $pr = Invoke-GitHubApi -Method GET -Path "$prefix/pulls/$PrNumber"
+    $diff = Invoke-GitHubRawGet -Path "$prefix/pulls/$PrNumber" -Accept 'application/vnd.github.diff'
+    $context = Get-RepositoryContext
+
+    return @{
+        host = $context.host
+        owner = $context.owner
+        repo = $context.repo
+        pullRequest = Select-PrSummary -PullRequest $pr
+        diff = $diff
+    }
+}
+
 function Add-PrSummaryComment {
     param(
         [Parameter(Mandatory = $true)]
@@ -581,6 +646,14 @@ switch ($Command) {
         Write-Json (Get-PrDetails -PrNumber $PrNumber)
         break
     }
+    'get-pr-code-changes' {
+        if ($PrNumber -le 0) {
+            Fail 'get-pr-code-changes requires -PrNumber with a positive integer.'
+        }
+
+        Write-Json (Get-PrCodeChanges -PrNumber $PrNumber)
+        break
+    }
     'add-pr-summary-comment' {
         if ($PrNumber -le 0) {
             Fail 'add-pr-summary-comment requires -PrNumber with a positive integer.'
@@ -610,6 +683,6 @@ switch ($Command) {
         break
     }
     default {
-        Fail "Unsupported command '$Command'. Allowed commands: detect-repo, list-open-prs, get-pr-details, add-pr-summary-comment, add-pr-line-comment."
+        Fail "Unsupported command '$Command'. Allowed commands: detect-repo, list-open-prs, get-pr-details, get-pr-code-changes, add-pr-summary-comment, add-pr-line-comment."
     }
 }

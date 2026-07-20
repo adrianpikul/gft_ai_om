@@ -1,6 +1,6 @@
 ---
 name: github-integrator
-description: Read pull requests and add approved pull request comments for the current repository by running the local integrator.ps1 script. Use this only for listing open PRs, fetching PR details, adding a PR summary comment, or adding an inline comment on a changed PR diff line.
+description: Read pull requests, retrieve a PR's complete code diff for review context, and add approved pull request comments for the current repository by running the local integrator.ps1 script. Use this only for listing open PRs, fetching PR details or code changes, adding a PR summary comment, or adding an inline comment on a changed PR diff line.
 ---
 
 Use only the `integrator.ps1` script in this skill directory for GitHub access.
@@ -9,6 +9,7 @@ Supported operations only:
 - Detect repository host, owner, and repo from git remotes
 - List open pull requests
 - Get PR details including title, changed files, and comments
+- Get all PR code changes as a complete unified diff for later review context
 - Add a PR summary comment
 - Add an inline PR file comment on a changed diff line
 
@@ -40,6 +41,7 @@ Commands:
 ./integrator.ps1 list-open-prs
 ./integrator.ps1 list-open-prs -State all -Page 1 -PerPage 100
 ./integrator.ps1 get-pr-details -PrNumber 123
+./integrator.ps1 get-pr-code-changes -PrNumber 123
 ./integrator.ps1 add-pr-summary-comment -PrNumber 123 -Body "Summary text"
 ./integrator.ps1 add-pr-line-comment -PrNumber 123 -FilePath "src/app.ts" -Line 42 -Body "Please revisit this logic."
 ```
@@ -47,6 +49,7 @@ Commands:
 Command requirements:
 - `list-open-prs` accepts optional `-State`, `-Page`, and `-PerPage`
 - `get-pr-details` requires `-PrNumber`
+- `get-pr-code-changes` requires `-PrNumber` and returns the PR metadata plus its full unified diff in the `diff` field
 - `add-pr-summary-comment` requires `-PrNumber` and `-Body`
 - `add-pr-line-comment` requires `-PrNumber`, `-FilePath`, `-Line`, and `-Body`
 
