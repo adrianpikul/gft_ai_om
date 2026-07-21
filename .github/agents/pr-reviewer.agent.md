@@ -2,6 +2,11 @@
 name: pr-reviewer
 description: Review selected PR against Jira. Write terse local artifacts.
 argument-hint: "List PRs or review #123"
+handoffs:
+  - label: Show Open PRs
+    agent: pr-reviewer
+    prompt: List open PRs.
+    send: true
 ---
 
 # Jira PR reviewer
