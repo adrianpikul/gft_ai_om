@@ -17,25 +17,3 @@ $env:gft_ai_om_github_pat = '...'
 $env:gft_ai_om_jira_url = 'https://jira.example.com/jira'
 $env:gft_ai_om_jira_pat = '...'
 ```
-
-## Copilot usage dashboard
-
-This repository now includes a VS Code Chat hook collector and a static dashboard:
-
-- Hook configuration: `.github/hooks/gft_ai_om_usage_hook.json`
-- Hook scripts: `gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh` and `gft_ai_om/copilot_usage/scripts/collect-copilot-usage.ps1`
-- Data directory: `gft_ai_om/copilot_usage/data/`
-- Monthly data file pattern: `gft_ai_om/copilot_usage/data/copilot_usage_MM_YYYY.json`
-- Dashboard: `gft_ai_om/copilot_usage/dashboard.html`
-
-Usage notes:
-
-- Before using the hooks, make the shell script executable on macOS/Linux:
-  ```bash
-  chmod +x gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh
-  ```
-- The hooks are workspace-level VS Code hook files and target VS Code Chat / agent sessions.
-- The command paths are rooted at the workspace and call scripts under `gft_ai_om/copilot_usage/scripts/`.
-- By default, the collectors write to month-scoped files based on the event timestamp. For example, July 2026 events go to `gft_ai_om/copilot_usage/data/copilot_usage_07_2026.json`.
-- The collector stores metadata only. It does not persist raw prompt text or full tool output.
-- When `dashboard.html` is opened from disk, browsers often block automatic JSON loading. Use the dashboard's `Open JSON File` button if the monthly file does not auto-load.
