@@ -22,7 +22,7 @@ $env:gft_ai_om_jira_pat = '...'
 
 This repository now includes a VS Code Chat hook collector and a static dashboard:
 
-- Hook configuration: `.github/hooks/hooks.json`
+- Hook configuration: `.github/hooks/gft_ai_om_usage_hook.json`
 - Hook scripts: `gft_ai_om/copilot_usage/scripts/collect-copilot-usage.sh` and `gft_ai_om/copilot_usage/scripts/collect-copilot-usage.ps1`
 - Data directory: `gft_ai_om/copilot_usage/data/`
 - Monthly data file pattern: `gft_ai_om/copilot_usage/data/copilot_usage_MM_YYYY.json`

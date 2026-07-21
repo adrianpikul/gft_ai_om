@@ -7,7 +7,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Normalize-EventName {
+function Resolve-EventName {
     param(
         [Parameter(Mandatory = $true)]
         [string]$Name
@@ -149,8 +149,8 @@ function Get-WordCount {
         return 0
     }
 
-    $matches = [regex]::Matches([string]$Value, '\S+')
-    return $matches.Count
+    $wordMatches = [regex]::Matches([string]$Value, '\S+')
+    return $wordMatches.Count
 }
 
 function Get-SerializedLength {
@@ -253,16 +253,16 @@ function Get-EventMetadata {
             if ([string]::IsNullOrWhiteSpace([string]$metadata.stopReason)) { $metadata.stopReason = 'unknown' }
         }
         'ErrorOccurred' {
-            $error = Get-Value -Object $Payload -Names @('error')
-            $message = Get-Value -Object $error -Names @('message')
-            $metadata.errorName = Get-Value -Object $error -Names @('name')
+            $errorRecord = Get-Value -Object $Payload -Names @('error')
+            $message = Get-Value -Object $errorRecord -Names @('message')
+            $metadata.errorName = Get-Value -Object $errorRecord -Names @('name')
             if ([string]::IsNullOrWhiteSpace([string]$metadata.errorName)) { $metadata.errorName = 'Error' }
             $metadata.errorContext = Get-Value -Object $Payload -Names @('errorContext', 'error_context')
             if ([string]::IsNullOrWhiteSpace([string]$metadata.errorContext)) { $metadata.errorContext = 'unknown' }
             $metadata.recoverable = [bool](Get-Value -Object $Payload -Names @('recoverable'))
             $metadata.errorMessageLength = Get-TextLength $message
             $metadata.errorMessageHash = if ($message) { Get-Sha256 ([string]$message) } else { $null }
-            $metadata.hasStack = [bool](Get-Value -Object $error -Names @('stack'))
+            $metadata.hasStack = [bool](Get-Value -Object $errorRecord -Names @('stack'))
         }
         'PreCompact' {
             $transcriptPath = Get-Value -Object $Payload -Names @('transcriptPath', 'transcript_path')
@@ -303,7 +303,7 @@ function Get-Store {
     if (Test-Path -LiteralPath $Path) {
         $raw = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
         if (-not [string]::IsNullOrWhiteSpace($raw)) {
-            return ($raw | ConvertFrom-Json -Depth 100 -AsHashtable)
+            return ($raw | ConvertFrom-Json)
         }
     }
 
@@ -313,7 +313,7 @@ function Get-Store {
 function Update-Summary {
     param(
         [Parameter(Mandatory = $true)]
-        [hashtable]$Store
+        $Store
     )
 
     $eventTypeCounts = @{}
@@ -322,8 +322,8 @@ function Update-Summary {
     $firstEventAt = $null
     $lastEventAt = $null
 
-    foreach ($event in @($Store.events)) {
-        $eventType = [string]$event.eventType
+    foreach ($usageEvent in @($Store.events)) {
+        $eventType = [string]$usageEvent.eventType
         if ([string]::IsNullOrWhiteSpace($eventType)) { $eventType = 'unknown' }
         if ($eventTypeCounts.ContainsKey($eventType)) {
             $eventTypeCounts[$eventType] = [int]$eventTypeCounts[$eventType] + 1
@@ -332,15 +332,15 @@ function Update-Summary {
             $eventTypeCounts[$eventType] = 1
         }
 
-        if (-not [string]::IsNullOrWhiteSpace([string]$event.sessionId)) {
-            [void]$sessions.Add([string]$event.sessionId)
+        if (-not [string]::IsNullOrWhiteSpace([string]$usageEvent.sessionId)) {
+            [void]$sessions.Add([string]$usageEvent.sessionId)
         }
 
-        if (-not [string]::IsNullOrWhiteSpace([string]$event.month)) {
-            [void]$months.Add([string]$event.month)
+        if (-not [string]::IsNullOrWhiteSpace([string]$usageEvent.month)) {
+            [void]$months.Add([string]$usageEvent.month)
         }
 
-        $timestamp = [string]$event.timestamp
+        $timestamp = [string]$usageEvent.timestamp
         if (-not [string]::IsNullOrWhiteSpace($timestamp)) {
             if ($null -eq $firstEventAt -or $timestamp -lt $firstEventAt) {
                 $firstEventAt = $timestamp
@@ -365,7 +365,7 @@ function Update-Summary {
 function Write-Store {
     param(
         [Parameter(Mandatory = $true)]
-        [hashtable]$Store,
+        $Store,
         [Parameter(Mandatory = $true)]
         [string]$Path
     )
@@ -375,7 +375,7 @@ function Write-Store {
     [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, $utf8NoBom)
 }
 
-function Acquire-Lock {
+function Enter-Lock {
     param(
         [Parameter(Mandatory = $true)]
         [string]$LockPath
@@ -400,7 +400,7 @@ function Acquire-Lock {
     }
 }
 
-function Release-Lock {
+function Exit-Lock {
     param(
         [Parameter(Mandatory = $true)]
         [string]$LockPath
@@ -416,14 +416,14 @@ $copilotUsageRoot = Split-Path -Parent $scriptDirectory
 $defaultDataDirectory = Join-Path $copilotUsageRoot 'data'
 $dataFile = [Environment]::GetEnvironmentVariable('COPILOT_USAGE_DATA_FILE')
 
-$EventName = Normalize-EventName -Name $EventName
+$EventName = Resolve-EventName -Name $EventName
 
 $inputPayloadText = [Console]::In.ReadToEnd()
 if ([string]::IsNullOrWhiteSpace($inputPayloadText)) {
     $inputPayloadText = '{}'
 }
 
-$payload = $inputPayloadText | ConvertFrom-Json -Depth 100
+$payload = $inputPayloadText | ConvertFrom-Json
 $dataFile = Get-MonthlyDataFilePath -ExplicitPath $dataFile -DefaultDirectory $defaultDataDirectory -Payload $payload
 $dataDirectory = Split-Path -Parent $dataFile
 if (-not (Test-Path -LiteralPath $dataDirectory)) {
@@ -433,7 +433,7 @@ if (-not (Test-Path -LiteralPath $dataDirectory)) {
 $lockPath = "$dataFile.lock"
 $recordedAt = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
-Acquire-Lock -LockPath $lockPath
+Enter-Lock -LockPath $lockPath
 try {
     $store = Get-Store -Path $dataFile
     $payloadCanonical = ConvertTo-CanonicalJson -Value $payload
@@ -484,5 +484,5 @@ try {
     Write-Store -Store $store -Path $dataFile
 }
 finally {
-    Release-Lock -LockPath $lockPath
+    Exit-Lock -LockPath $lockPath
 }
