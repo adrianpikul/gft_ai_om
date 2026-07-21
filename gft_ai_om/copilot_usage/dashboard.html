@@ -396,7 +396,7 @@
   <div class="page">
     <section class="hero">
       <h1>Copilot Usage Dashboard</h1>
-      <p>Monthly telemetry from VS Code Chat hooks. This dashboard reads the adjacent <code>copilot-usage.json</code> when it can, and falls back to loading the file directly when opened from disk.</p>
+      <p>Monthly telemetry from VS Code Chat hooks. This dashboard tries to read the current month's file from <code>./data/</code> and falls back to loading a JSON file directly when opened from disk.</p>
       <div class="hero-meta">
         <span class="pill">Metadata-only storage</span>
         <span class="pill">VS Code Chat hook coverage</span>
@@ -404,7 +404,7 @@
       </div>
       <div class="loader">
         <div class="loader-row">
-          <button id="loadDefaultButton" class="button" type="button">Load Adjacent JSON</button>
+          <button id="loadDefaultButton" class="button" type="button">Load Current Month</button>
           <label class="file-label" for="fileInput">Open JSON File</label>
           <input id="fileInput" type="file" accept=".json,application/json">
           <button id="loadSampleButton" class="button secondary" type="button">Load Embedded Empty State</button>
@@ -451,6 +451,13 @@
       }
       const date = new Date(value);
       return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+    }
+
+    function getCurrentMonthlyDataPath() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = String(now.getFullYear());
+      return `./data/copilot_usage_${month}_${year}.json`;
     }
 
     function median(values) {
@@ -901,17 +908,18 @@
     }
 
     async function loadDefaultJson() {
+      const defaultPath = getCurrentMonthlyDataPath();
       try {
-        const response = await fetch("./copilot-usage.json", { cache: "no-store" });
+        const response = await fetch(defaultPath, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
         const data = await response.json();
         renderDashboard(data);
-        setStatus("Loaded ./copilot-usage.json");
+        setStatus(`Loaded ${defaultPath}`);
       } catch (error) {
         renderDashboard(emptyStore);
-        setStatus("Unable to auto-load ./copilot-usage.json. If you opened this file directly from disk, use “Open JSON File”.");
+        setStatus(`Unable to auto-load ${defaultPath}. If you opened this file directly from disk, use “Open JSON File”.`);
       }
     }
 

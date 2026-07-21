@@ -106,6 +106,32 @@ function Get-IsoTimestamp {
     return $epoch.UtcDateTime.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 }
 
+function Get-MonthlyDataFilePath {
+    param(
+        [string]$ExplicitPath,
+        [Parameter(Mandatory = $true)]
+        [string]$DefaultDirectory,
+        $Payload
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitPath)) {
+        return $ExplicitPath
+    }
+
+    $timestamp = Get-IsoTimestamp (Get-Value -Object $Payload -Names @('timestamp'))
+    if (-not [string]::IsNullOrWhiteSpace($timestamp) -and $timestamp.Length -ge 7) {
+        $year = $timestamp.Substring(0, 4)
+        $month = $timestamp.Substring(5, 2)
+    }
+    else {
+        $now = [DateTime]::UtcNow
+        $year = $now.ToString('yyyy')
+        $month = $now.ToString('MM')
+    }
+
+    return (Join-Path $DefaultDirectory ("copilot_usage_{0}_{1}.json" -f $month, $year))
+}
+
 function Get-TextLength {
     param($Value)
 
@@ -387,11 +413,8 @@ function Release-Lock {
 
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $copilotUsageRoot = Split-Path -Parent $scriptDirectory
-$defaultDataFile = Join-Path $copilotUsageRoot 'copilot-usage.json'
+$defaultDataDirectory = Join-Path $copilotUsageRoot 'data'
 $dataFile = [Environment]::GetEnvironmentVariable('COPILOT_USAGE_DATA_FILE')
-if ([string]::IsNullOrWhiteSpace($dataFile)) {
-    $dataFile = $defaultDataFile
-}
 
 $EventName = Normalize-EventName -Name $EventName
 
@@ -401,6 +424,7 @@ if ([string]::IsNullOrWhiteSpace($inputPayloadText)) {
 }
 
 $payload = $inputPayloadText | ConvertFrom-Json -Depth 100
+$dataFile = Get-MonthlyDataFilePath -ExplicitPath $dataFile -DefaultDirectory $defaultDataDirectory -Payload $payload
 $dataDirectory = Split-Path -Parent $dataFile
 if (-not (Test-Path -LiteralPath $dataDirectory)) {
     New-Item -ItemType Directory -Path $dataDirectory -Force | Out-Null

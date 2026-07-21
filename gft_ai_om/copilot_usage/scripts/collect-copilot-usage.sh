@@ -10,8 +10,8 @@ if [[ -z "${EVENT_NAME}" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_DATA_FILE="$(cd "${SCRIPT_DIR}/.." && pwd)/copilot-usage.json"
-DATA_FILE="${COPILOT_USAGE_DATA_FILE:-${DEFAULT_DATA_FILE}}"
+DEFAULT_DATA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)/data"
+DATA_FILE="${COPILOT_USAGE_DATA_FILE:-}"
 PAYLOAD_FILE="$(mktemp)"
 cleanup() {
   rm -f "${PAYLOAD_FILE}"
@@ -20,7 +20,7 @@ trap cleanup EXIT
 
 cat > "${PAYLOAD_FILE}"
 
-python3 - "${EVENT_NAME}" "${DATA_FILE}" "${PAYLOAD_FILE}" <<'PY'
+python3 - "${EVENT_NAME}" "${DATA_FILE}" "${DEFAULT_DATA_DIR}" "${PAYLOAD_FILE}" <<'PY'
 import copy
 import datetime as dt
 import hashlib
@@ -101,6 +101,21 @@ def normalize_event_name(value):
     if not text:
         return "unknown"
     return EVENT_ALIASES.get(text.lower(), text)
+
+
+def resolve_data_file(explicit_path, default_dir, payload):
+    if explicit_path:
+        return os.path.abspath(explicit_path)
+    timestamp = iso_from_value(read_value(payload, "timestamp"))
+    if timestamp:
+        month = timestamp[5:7]
+        year = timestamp[0:4]
+    else:
+        now = dt.datetime.now(tz=dt.timezone.utc)
+        month = f"{now.month:02d}"
+        year = f"{now.year:04d}"
+    filename = f"copilot_usage_{month}_{year}.json"
+    return os.path.join(os.path.abspath(default_dir), filename)
 
 
 TOOL_CATEGORIES = {
@@ -258,12 +273,14 @@ def release_lock(lock_path):
 
 
 event_name = normalize_event_name(sys.argv[1])
-data_file = os.path.abspath(sys.argv[2])
-payload_file = sys.argv[3]
+data_file_override = sys.argv[2].strip()
+default_data_dir = sys.argv[3]
+payload_file = sys.argv[4]
 with open(payload_file, "r", encoding="utf-8") as handle:
     payload_text = handle.read().strip() or "{}"
 
 payload = json.loads(payload_text)
+data_file = resolve_data_file(data_file_override, default_data_dir, payload)
 os.makedirs(os.path.dirname(data_file), exist_ok=True)
 lock_path = data_file + ".lock"
 recorded_at = dt.datetime.now(tz=dt.timezone.utc).isoformat().replace("+00:00", "Z")
