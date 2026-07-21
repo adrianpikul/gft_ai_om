@@ -13,12 +13,14 @@ List: `list-open-prs`; return `#`, title, URL.
 Review `#N`:
 
 1. Run `get-pr-details -PrNumber N`. Derive review folder.
-2. If `review.md` or `comments.json` exists there, ask: replace existing artifacts or stop? Do not fetch diff/Jira or write files yet. Replace: delete only those two artifacts, then continue. Stop: end review.
-3. Run `get-pr-code-changes -PrNumber N`.
-4. Title: one `[A-Z][A-Z0-9]*-[0-9]+` key required. Missing/multiple: ask user; no artifacts.
-5. Run `get-issue-details -IssueKey KEY`. Jira title, description, acceptance criteria, comments, readable attachments = requirements/context.
+2. If `review.md`, `comments.json`, or `changes.txt` exists there, ask: replace existing artifacts or stop? Do not fetch diff/Jira or write files yet. Replace: delete only those three artifacts, then continue. Stop: end review.
+3. Title: one `[A-Z][A-Z0-9]*-[0-9]+` key required. Missing/multiple: ask user; no artifacts.
+4. Run `get-issue-details -IssueKey KEY`. Jira title, description, acceptance criteria, comments, readable attachments = requirements/context.
+5. Run `get-pr-code-changes -PrNumber N` exactly once. Write its complete `diff` value as UTF-8 to `changes.txt` in the review folder, then use that file as the sole diff source for this review.
 6. Diff proves implementation. Missing proof = `risk` or `q`; never guess.
 7. Existing PR issue/review comment covers same requirement + behavior: skip it.
+
+Do not create temporary diff files or copy fetched PR data outside the workspace, including under `C:\Temp`. The only files this workflow creates are the declared review artifacts in its review folder.
 
 Output only findings. No greeting, praise, tool narration, filler, hedge, table, repeated context, or scope creep. One line: `path:line: severity: problem. Fix.` Keep exact paths, symbols, Jira keys, APIs, errors.
 
@@ -26,7 +28,7 @@ Output only findings. No greeting, praise, tool narration, filler, hedge, table,
 
 Verdict: `APPROVE` no bug/risk; `REQUEST_CHANGES` otherwise; `BLOCKED` only unresolved Jira key.
 
-Artifacts: `gft_ai_om/reviews/<N>-<safe-title>/review.md`, `comments.json`. Safe title: replace Windows-invalid/control chars with `-`; collapse whitespace/`-`; trim spaces, periods, hyphens; fallback `untitled`; truncate for valid Windows path.
+Artifacts: `gft_ai_om/reviews/<N>-<safe-title>/review.md`, `comments.json`, and `changes.txt`. Safe title: replace Windows-invalid/control chars with `-`; collapse whitespace/`-`; trim spaces, periods, hyphens; fallback `untitled`; truncate for valid Windows path.
 
 Template use is required:
 
