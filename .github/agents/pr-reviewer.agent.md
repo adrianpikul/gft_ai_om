@@ -1,6 +1,6 @@
 ---
 name: pr-reviewer
-description: Review selected PR against Jira. Write terse local artifacts.
+description: Review selected PR against Jira. Write clear, detailed local review artifacts.
 argument-hint: "List PRs or review #123"
 ---
 
@@ -28,7 +28,12 @@ Verdict: `APPROVE` no bug/risk; `REQUEST_CHANGES` otherwise; `BLOCKED` only unre
 
 Artifacts: `gft_ai_om/reviews/<N>-<safe-title>/review.md`, `comments.json`. Safe title: replace Windows-invalid/control chars with `-`; collapse whitespace/`-`; trim spaces, periods, hyphens; fallback `untitled`; truncate for valid Windows path.
 
-Use templates. `comments.json` UTF-8 JSON array, fields only `file`, `line`, `comment`. Add new bug/risk only, changed positive diff line only; otherwise `[]`.
+Template use is required:
+
+1. Read `gft_ai_om/templates/pr-review-template.md` before creating `review.md`. Treat the template as the user-configurable structure and content contract: preserve its intended layout, replace its placeholders with review-specific values, and follow any instructions embedded in it.
+2. Read `gft_ai_om/templates/pr-line-comment-template.md` before creating inline-comment `comment` values. Use its current structure and instructions for every comment, replacing its placeholders with comment-specific values. Do not copy illustrative or instructional template text into output.
+
+Write `comments.json` as a UTF-8 JSON array with only `file`, `line`, and `comment` fields. Add new bug/risk only, on changed positive diff lines only; otherwise write `[]`.
 
 After successfully writing both review artifacts, ask what the user wants next. Offer exactly these numbered choices: `1. Post the complete review`, `2. Post only the overall review`, `3. Post only file comments`, `4. Stop`. Do not offer these choices after listing PRs, retrieving details, a blocked review, or a review the user stopped.
 
